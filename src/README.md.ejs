@@ -1,0 +1,425 @@
+# Reorg Tuesday
+
+*Ever feel like your org gets restructured every other Tuesday? This treats your
+history of reorgs and manager changes as a [survival-analysis](https://en.wikipedia.org/wiki/Survival_analysis)
+problem — Kaplan-Meier curves, Weibull MLE, Monte Carlo forecasts, a composite
+risk score, and more — then renders it all as the charts below. Mostly for fun.
+See [Reorgs happen](https://ben.balter.com/2026/06/07/reorgs-happen/) for the story
+behind it.*
+
+> **The data in [`managers.csv`](managers.csv) is synthetic sample data.** Swap in
+> your own and regenerate: `npm install && npm start`. See [below](#about) for details.
+
+Time at Acme: <%- humanDateDiff(tenure) %> (<%= formatDate(orgStructures[0].startDate) %> – <%= formatDate(today) %>)
+
+> *Final snapshot. Tenure ended <%= formatDate(today) %>; analysis frozen as of that date and preserved for posterity.*
+
+> **Reorg Risk: <%= reorgRisk.emoji %> <%= reorgRisk.composite %>/100 (<%= reorgRisk.label %>)** | **Manager Risk: <%= managerRisk.emoji %> <%= managerRisk.composite %>/100 (<%= managerRisk.label %>)**
+
+---
+
+## Reorgs
+
+```
+<%- graph(orgStructures) %>
+```
+
+### Descriptive statistics
+
+| Metric | Value |
+|--------|-------|
+| Count | <%= reorgStats.number %> |
+| Min | <%- humanDateDiff(reorgStats.min) %> |
+| Max | <%- humanDateDiff(reorgStats.max) %> |
+| Mean | <%- humanDateDiff(reorgStats.mean) %> |
+| Median | <%- humanDateDiff(reorgStats.median) %> |
+| Q1 (25th percentile) | <%- humanDateDiff(reorgStats.q1) %> |
+| Q3 (75th percentile) | <%- humanDateDiff(reorgStats.q3) %> |
+| Std deviation | <%- humanDateDiff(reorgStats.standardDeviation) %> |
+| Skewness | <%= reorgStats.skewness !== null ? round(reorgStats.skewness, 2) : 'N/A' %><%= reorgStats.skewness !== null ? (reorgStats.skewness > 0.5 ? ' (right-skewed — some very long gaps)' : reorgStats.skewness < -0.5 ? ' (left-skewed)' : ' (roughly symmetric)') : '' %> |
+| Coefficient of variation | <%= round(reorgStats.coefficientOfVariation * 100, 0) %>%<%= reorgStats.coefficientOfVariation > 0.5 ? ' (high variability)' : reorgStats.coefficientOfVariation > 0.25 ? ' (moderate variability)' : ' (low variability)' %> |
+| Rate | <%= reorgRate %>/year (last 3 years: <%= reorgRollingRate %>/year) |
+
+### Current status
+
+* Last reorg: <%- humanDateDiff(daysSinceLastReorg) %> ago <%= reorgOverdue ? "⚠️ Overdue (past median)" : "✅" %> — longer than <%= reorgPercentile %>% of historical tenures
+* Longest ever gap: <%- humanDateDiff(reorgLongestStreak) %>
+* Per-cycle trend: <%- trendDescription(reorgTrend) %><%= reorgTrendRegression ? ` (R²=${reorgTrendRegression.rSquared})` : '' %>
+* Calendar trend: <%- timeTrendDescription(reorgTimeWeightedTrend) %>
+* Weighted recent average: <%- humanDateDiff(weightedAverageDuration(reorgDurations)) %>
+
+### Reorg probability
+
+| Window | Probability |
+|--------|------------|
+<% for (const [days, pct] of reorgProbabilities) { -%>
+| Next <%= days %> days | <%= pct %>% |
+<% } -%>
+
+### Frequency by quarter
+
+<% const reorgs = orgStructures.slice(1); -%>
+```mermaid
+pie title Reorg Frequency by Quarter
+<% for (const [quarter, count] of frequencyByQuarter(reorgs)) { -%>
+    "<%= quarter %>" : <%= count %>
+<% } -%>
+```
+
+### Most popular 
+
+<% const reorgDateFormats = { day: "d", month: "MMM", year: "yyyy", day_of_week: "EEEE" }; -%>
+<% for (const [k, v] of Object.entries(reorgDateFormats)) { -%>
+<% const counts = dateCount(reorgs, v); -%>
+<% let maxKey = ""; let maxVal = 0; for (const [ck, cv] of counts) { if (cv > maxVal) { maxKey = ck; maxVal = cv; } } -%>
+* <%= k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, " ") %>: <%= maxKey %> (<%= maxVal %>)
+<% } -%>
+
+### Duration histogram
+
+<% const reorgHist = histogram(reorgDurations); -%>
+```mermaid
+xychart-beta
+    title "Reorg Duration Distribution (days)"
+    x-axis [<%- reorgHist.map(b => `"${b.label}"`).join(', ') %>]
+    y-axis "Count" 0 --> <%= Math.max(...reorgHist.map(b => b.count)) + 1 %>
+    bar [<%= reorgHist.map(b => b.count).join(', ') %>]
+```
+
+### Reorg timeline
+
+```mermaid
+gantt
+    title Org Structure Timeline
+    dateFormat YYYY-MM-DD
+    axisFormat %Y
+<% for (let i = 0; i < orgStructures.length; i++) { -%>
+<% const os = orgStructures[i]; const endDate = i + 1 < orgStructures.length ? orgStructures[i + 1].startDate : today; -%>
+    Reorg <%= i + 1 %> :<%- formatDate(os.startDate) %>, <%- formatDate(endDate) %>
+<% } -%>
+```
+
+### Kaplan-Meier survival curve
+
+```mermaid
+xychart-beta
+    title "Reorg Survival Probability"
+    x-axis "Days" [<%= reorgSurvivalCurve.map(p => p[0]).join(', ') %>]
+    y-axis "Survival %" 0 --> 100
+    line [<%= reorgSurvivalCurve.map(p => Math.round(p[1] * 100)).join(', ') %>]
+```
+
+<% if (reorgHazard.length > 0) { -%>
+### Hazard function
+
+```mermaid
+xychart-beta
+    title "Reorg Hazard Rate h(t)"
+    x-axis "Days" [<%= reorgHazard.map(p => p.time).join(', ') %>]
+    y-axis "Hazard"
+    line [<%= reorgHazard.map(p => p.hazard).join(', ') %>]
+```
+<% } -%>
+
+### Distribution fitting
+
+| Model | Parameters | AIC | Selected |
+|-------|-----------|-----|----------|
+<% if (reorgDistFit.lognormal) { -%>
+| Lognormal | μ=<%= round(reorgDistFit.lognormal.mu, 2) %>, σ=<%= round(reorgDistFit.lognormal.sigma, 2) %> | <%= reorgDistFit.lognormalAic !== null ? round(reorgDistFit.lognormalAic, 1) : 'N/A' %> | <%= reorgDistFit.bestFit === 'lognormal' ? '✅' : '' %> |
+<% } -%>
+<% if (reorgDistFit.weibull) { -%>
+| Weibull | k=<%= round(reorgDistFit.weibull.shape, 2) %>, λ=<%= round(reorgDistFit.weibull.scale, 1) %> | <%= reorgDistFit.weibullAic !== null ? round(reorgDistFit.weibullAic, 1) : 'N/A' %> | <%= reorgDistFit.bestFit === 'weibull' ? '✅' : '' %> |
+<% } -%>
+<% if (reorgDistFit.bestFit === 'empirical') { -%>
+| Empirical | (non-parametric) | N/A | ✅ |
+<% } -%>
+
+### Bootstrap confidence intervals (10,000 resamples)
+
+| Statistic | Estimate | 80% CI | 95% CI | SE |
+|-----------|----------|--------|--------|-----|
+| Mean | <%- humanDateDiff(reorgBootstrapMean.mean) %> | <%- humanDateDiff(reorgBootstrapMean.ci80Low) %> – <%- humanDateDiff(reorgBootstrapMean.ci80High) %> | <%- humanDateDiff(reorgBootstrapMean.ci95Low) %> – <%- humanDateDiff(reorgBootstrapMean.ci95High) %> | <%- humanDateDiff(reorgBootstrapMean.standardError) %> |
+| Median | <%- humanDateDiff(reorgBootstrapMedian.mean) %> | <%- humanDateDiff(reorgBootstrapMedian.ci80Low) %> – <%- humanDateDiff(reorgBootstrapMedian.ci80High) %> | <%- humanDateDiff(reorgBootstrapMedian.ci95Low) %> – <%- humanDateDiff(reorgBootstrapMedian.ci95High) %> | <%- humanDateDiff(reorgBootstrapMedian.standardError) %> |
+
+### Monte Carlo simulation (<%= reorgMonteCarlo.simulations.toLocaleString() %> iterations)
+
+* **Median prediction**: <%= formatDate(reorgMonteCarlo.predictedDate.median) %> (<%= humanDateDiff(reorgMonteCarlo.predictedDate.median) %> <%= isBefore(reorgMonteCarlo.predictedDate.median, today) ? "ago" : "from now" %>)
+* **80% CI**: <%= formatDate(reorgMonteCarlo.predictedDate.ci80Low) %> to <%= formatDate(reorgMonteCarlo.predictedDate.ci80High) %>
+* **95% CI**: <%= formatDate(reorgMonteCarlo.predictedDate.ci95Low) %> to <%= formatDate(reorgMonteCarlo.predictedDate.ci95High) %>
+* Predicted duration: <%- humanDateDiff(reorgMonteCarlo.predictedDays.mean) %> ± <%- humanDateDiff(reorgMonteCarlo.predictedDays.standardError) %>
+
+### Forecast ensemble (<%= reorgEnsemble.models.length %> models)
+
+| Model | Prediction | Weight | Description |
+|-------|-----------|--------|-------------|
+<% for (const model of reorgEnsemble.models) { -%>
+| <%= model.name %> | <%= formatDate(model.prediction) %> | <%= round(model.weight * 100, 0) %>% | <%= model.description %> |
+<% } -%>
+
+* **🎯 Ensemble prediction**: <%= formatDate(reorgEnsemble.weightedPrediction) %> (<%= humanDateDiff(reorgEnsemble.weightedPrediction) %> <%= isBefore(reorgEnsemble.weightedPrediction, today) ? "ago" : "from now" %>)
+* Model agreement: <%= reorgEnsemble.agreementScore %>% (spread: <%= reorgEnsemble.spreadDays %> days)
+
+### Next reorg predictions (classic)
+
+<% for (const [k, v] of Object.entries(reorgPredictions)) { -%>
+* <%= k.charAt(0).toUpperCase() + k.slice(1) %>: <%= formatDate(v) %> (<%= humanDateDiff(v) %> <%= isBefore(v, today) ? "ago" : "from now" %>)
+<% } -%>
+<% if (reorgPredictionCi) { -%>
+* **80% Parametric CI**: <%= formatDate(reorgPredictionCi.low) %> to <%= formatDate(reorgPredictionCi.high) %>
+<% } -%>
+
+### Risk score decomposition
+
+| Component | Score | Weight |
+|-----------|-------|--------|
+| Kaplan-Meier survival | <%= reorgRisk.components.survival %>/100 | 25% |
+| Lognormal model | <%= reorgRisk.components.lognormal %>/100 | 20% |
+| Weibull model | <%= reorgRisk.components.weibull %>/100 | 20% |
+| Trend analysis | <%= reorgRisk.components.trend %>/100 | 10% |
+| Recency | <%= reorgRisk.components.recency %>/100 | 10% |
+| Percentile rank | <%= reorgRisk.components.percentile %>/100 | 15% |
+| **Composite** | **<%= reorgRisk.emoji %> <%= reorgRisk.composite %>/100** | |
+
+### Information theory
+
+* Shannon entropy: <%= reorgEntropy.shannonEntropy %> bits
+* Normalized entropy: <%= reorgEntropy.normalizedEntropy %> (<%= reorgEntropy.normalizedEntropy > 0.8 ? 'high disorder — very unpredictable' : reorgEntropy.normalizedEntropy > 0.5 ? 'moderate disorder' : 'low disorder — somewhat predictable' %>)
+* Gini impurity: <%= reorgEntropy.giniImpurity %>
+* Effective number of states: <%= reorgEntropy.effectiveNumberOfStates %>
+
+### Serial correlation
+
+* Lag-1 autocorrelation: <%= reorgAutocorrelation.lag1 %><%= Math.abs(reorgAutocorrelation.lag1) > 0.3 ? ' ⚠️ significant' : '' %>
+* Lag-2 autocorrelation: <%= reorgAutocorrelation.lag2 %>
+* Lag-3 autocorrelation: <%= reorgAutocorrelation.lag3 %>
+* Ljung-Box test: Q=<%= reorgAutocorrelation.ljungBoxStatistic %>, p=<%= reorgAutocorrelation.ljungBoxPValue %> → <%= reorgAutocorrelation.isIndependent ? 'Durations are independent ✅' : 'Serial dependence detected ⚠️' %>
+
+### Poisson process test
+
+* Observed rate: <%= reorgPoisson.observedRate %> events/day
+* Dispersion index: <%= reorgPoisson.dispersionIndex %> (<%= reorgPoisson.dispersionIndex > 2 ? 'overdispersed — clustered events' : reorgPoisson.dispersionIndex < 0.5 ? 'underdispersed — regular spacing' : 'consistent with Poisson' %>)
+* χ² statistic: <%= reorgPoisson.chiSquaredStatistic %>, p=<%= reorgPoisson.chiSquaredPValue %>
+* Verdict: <%= reorgPoisson.isHomogeneous ? 'Consistent with homogeneous Poisson process ✅' : 'Not a homogeneous Poisson process ⚠️' %>
+
+<% if (reorgChangepoints.length > 0) { -%>
+### Detected changepoints (CUSUM)
+
+<% for (const cp of reorgChangepoints) { -%>
+* **<%= formatDate(cp.date) %>**: Duration <%= cp.direction %>d by <%= Math.abs(cp.magnitude) %>σ (CUSUM=<%= round(cp.cusumValue, 1) %>)
+<% } -%>
+<% } -%>
+
+---
+
+## Managers
+
+```
+<%- graph(managers) %>
+```
+
+### Descriptive statistics
+
+| Metric | Value |
+|--------|-------|
+| Count | <%= managerStats.number %> |
+| Min | <%- humanDateDiff(managerStats.min) %> |
+| Max | <%- humanDateDiff(managerStats.max) %> |
+| Mean | <%- humanDateDiff(managerStats.mean) %> |
+| Median | <%- humanDateDiff(managerStats.median) %> |
+| Q1 (25th percentile) | <%- humanDateDiff(managerStats.q1) %> |
+| Q3 (75th percentile) | <%- humanDateDiff(managerStats.q3) %> |
+| Std deviation | <%- humanDateDiff(managerStats.standardDeviation) %> |
+| Skewness | <%= managerStats.skewness !== null ? round(managerStats.skewness, 2) : 'N/A' %><%= managerStats.skewness !== null ? (managerStats.skewness > 0.5 ? ' (right-skewed)' : managerStats.skewness < -0.5 ? ' (left-skewed)' : ' (roughly symmetric)') : '' %> |
+| Coefficient of variation | <%= round(managerStats.coefficientOfVariation * 100, 0) %>%<%= managerStats.coefficientOfVariation > 0.5 ? ' (high variability)' : managerStats.coefficientOfVariation > 0.25 ? ' (moderate variability)' : ' (low variability)' %> |
+| Churn rate | <%= managerChurnRate %>/year (last 3 years: <%= managerRollingRate %>/year) |
+
+### Current status
+
+* Last manager change: <%- humanDateDiff(daysSinceLastManagerChange) %> ago <%= managerOverdue ? "⚠️ Overdue (past median)" : "✅" %> — longer than <%= managerPercentile %>% of historical tenures
+* Longest ever gap: <%- humanDateDiff(managerLongestStreak) %>
+* Per-cycle trend: <%- trendDescription(managerTrend) %><%= managerTrendRegression ? ` (R²=${managerTrendRegression.rSquared})` : '' %>
+* Calendar trend: <%- timeTrendDescription(managerTimeWeightedTrend) %>
+* Weighted recent average: <%- humanDateDiff(weightedAverageDuration(managerDurations)) %>
+
+### Manager change probability
+
+| Window | Probability |
+|--------|------------|
+<% for (const [days, pct] of managerProbabilities) { -%>
+| Next <%= days %> days | <%= pct %>% |
+<% } -%>
+
+### Managers by tenure
+
+<% const uniqueManagers = [...new Map(managers.map(m => [m.login, m])).values()]; -%>
+<% uniqueManagers.sort((a, b) => b.tenure - a.tenure); -%>
+
+| Manager | Tenure |
+|---------|--------|
+<% for (const manager of uniqueManagers) { -%>
+| <%= manager.login %> | <%- humanDateDiff(manager.tenure) %> |
+<% } -%>
+
+### Duration histogram
+
+<% const mgrHist = histogram(managerDurations); -%>
+```mermaid
+xychart-beta
+    title "Manager Stint Duration Distribution (days)"
+    x-axis [<%- mgrHist.map(b => `"${b.label}"`).join(', ') %>]
+    y-axis "Count" 0 --> <%= Math.max(...mgrHist.map(b => b.count)) + 1 %>
+    bar [<%= mgrHist.map(b => b.count).join(', ') %>]
+```
+
+### Manager timeline
+
+```mermaid
+gantt
+    title Manager Timeline
+    dateFormat YYYY-MM-DD
+    axisFormat %Y
+<% for (let i = 0; i < managers.length; i++) { -%>
+<% const mgr = managers[i]; const endDate = i + 1 < managers.length ? managers[i + 1].startDate : today; -%>
+    <%= mgr.login %> :<%- formatDate(mgr.startDate) %>, <%- formatDate(endDate) %>
+<% } -%>
+```
+
+### Kaplan-Meier survival curve
+
+```mermaid
+xychart-beta
+    title "Manager Survival Probability"
+    x-axis "Days" [<%= managerSurvivalCurve.map(p => p[0]).join(', ') %>]
+    y-axis "Survival %" 0 --> 100
+    line [<%= managerSurvivalCurve.map(p => Math.round(p[1] * 100)).join(', ') %>]
+```
+
+<% if (managerHazard.length > 0) { -%>
+### Hazard function
+
+```mermaid
+xychart-beta
+    title "Manager Hazard Rate h(t)"
+    x-axis "Days" [<%= managerHazard.map(p => p.time).join(', ') %>]
+    y-axis "Hazard"
+    line [<%= managerHazard.map(p => p.hazard).join(', ') %>]
+```
+<% } -%>
+
+### Distribution fitting
+
+| Model | Parameters | AIC | Selected |
+|-------|-----------|-----|----------|
+<% if (managerDistFit.lognormal) { -%>
+| Lognormal | μ=<%= round(managerDistFit.lognormal.mu, 2) %>, σ=<%= round(managerDistFit.lognormal.sigma, 2) %> | <%= managerDistFit.lognormalAic !== null ? round(managerDistFit.lognormalAic, 1) : 'N/A' %> | <%= managerDistFit.bestFit === 'lognormal' ? '✅' : '' %> |
+<% } -%>
+<% if (managerDistFit.weibull) { -%>
+| Weibull | k=<%= round(managerDistFit.weibull.shape, 2) %>, λ=<%= round(managerDistFit.weibull.scale, 1) %> | <%= managerDistFit.weibullAic !== null ? round(managerDistFit.weibullAic, 1) : 'N/A' %> | <%= managerDistFit.bestFit === 'weibull' ? '✅' : '' %> |
+<% } -%>
+
+### Bootstrap confidence intervals (10,000 resamples)
+
+| Statistic | Estimate | 80% CI | 95% CI | SE |
+|-----------|----------|--------|--------|-----|
+| Mean | <%- humanDateDiff(managerBootstrapMean.mean) %> | <%- humanDateDiff(managerBootstrapMean.ci80Low) %> – <%- humanDateDiff(managerBootstrapMean.ci80High) %> | <%- humanDateDiff(managerBootstrapMean.ci95Low) %> – <%- humanDateDiff(managerBootstrapMean.ci95High) %> | <%- humanDateDiff(managerBootstrapMean.standardError) %> |
+| Median | <%- humanDateDiff(managerBootstrapMedian.mean) %> | <%- humanDateDiff(managerBootstrapMedian.ci80Low) %> – <%- humanDateDiff(managerBootstrapMedian.ci80High) %> | <%- humanDateDiff(managerBootstrapMedian.ci95Low) %> – <%- humanDateDiff(managerBootstrapMedian.ci95High) %> | <%- humanDateDiff(managerBootstrapMedian.standardError) %> |
+
+### Monte Carlo simulation (<%= managerMonteCarlo.simulations.toLocaleString() %> iterations)
+
+* **Median prediction**: <%= formatDate(managerMonteCarlo.predictedDate.median) %> (<%= humanDateDiff(managerMonteCarlo.predictedDate.median) %> <%= isBefore(managerMonteCarlo.predictedDate.median, today) ? "ago" : "from now" %>)
+* **80% CI**: <%= formatDate(managerMonteCarlo.predictedDate.ci80Low) %> to <%= formatDate(managerMonteCarlo.predictedDate.ci80High) %>
+* **95% CI**: <%= formatDate(managerMonteCarlo.predictedDate.ci95Low) %> to <%= formatDate(managerMonteCarlo.predictedDate.ci95High) %>
+
+### Forecast ensemble (<%= managerEnsemble.models.length %> models)
+
+| Model | Prediction | Weight | Description |
+|-------|-----------|--------|-------------|
+<% for (const model of managerEnsemble.models) { -%>
+| <%= model.name %> | <%= formatDate(model.prediction) %> | <%= round(model.weight * 100, 0) %>% | <%= model.description %> |
+<% } -%>
+
+* **🎯 Ensemble prediction**: <%= formatDate(managerEnsemble.weightedPrediction) %> (<%= humanDateDiff(managerEnsemble.weightedPrediction) %> <%= isBefore(managerEnsemble.weightedPrediction, today) ? "ago" : "from now" %>)
+* Model agreement: <%= managerEnsemble.agreementScore %>% (spread: <%= managerEnsemble.spreadDays %> days)
+
+### Most popular 
+
+<% const mgrDateFormats = { day: "d", month: "MMM", year: "yyyy", day_of_week: "EEEE" }; -%>
+<% for (const [k, v] of Object.entries(mgrDateFormats)) { -%>
+<% const counts = dateCount(managers, v); -%>
+<% let maxKey2 = ""; let maxVal2 = 0; for (const [ck, cv] of counts) { if (cv > maxVal2) { maxKey2 = ck; maxVal2 = cv; } } -%>
+* <%= k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, " ") %>: <%= maxKey2 %> (<%= maxVal2 %>)
+<% } -%>
+
+### Risk score decomposition
+
+| Component | Score | Weight |
+|-----------|-------|--------|
+| Kaplan-Meier survival | <%= managerRisk.components.survival %>/100 | 25% |
+| Lognormal model | <%= managerRisk.components.lognormal %>/100 | 20% |
+| Weibull model | <%= managerRisk.components.weibull %>/100 | 20% |
+| Trend analysis | <%= managerRisk.components.trend %>/100 | 10% |
+| Recency | <%= managerRisk.components.recency %>/100 | 10% |
+| Percentile rank | <%= managerRisk.components.percentile %>/100 | 15% |
+| **Composite** | **<%= managerRisk.emoji %> <%= managerRisk.composite %>/100** | |
+
+### Information theory
+
+* Shannon entropy: <%= managerEntropy.shannonEntropy %> bits
+* Normalized entropy: <%= managerEntropy.normalizedEntropy %>
+* Gini impurity: <%= managerEntropy.giniImpurity %>
+* Effective states: <%= managerEntropy.effectiveNumberOfStates %>
+
+### Serial correlation
+
+* Lag-1 autocorrelation: <%= managerAutocorrelation.lag1 %><%= Math.abs(managerAutocorrelation.lag1) > 0.3 ? ' ⚠️ significant' : '' %>
+* Ljung-Box: Q=<%= managerAutocorrelation.ljungBoxStatistic %>, p=<%= managerAutocorrelation.ljungBoxPValue %> → <%= managerAutocorrelation.isIndependent ? 'Independent ✅' : 'Dependent ⚠️' %>
+
+### Poisson process test
+
+* Dispersion index: <%= managerPoisson.dispersionIndex %>
+* χ² test: p=<%= managerPoisson.chiSquaredPValue %> → <%= managerPoisson.isHomogeneous ? 'Poisson ✅' : 'Not Poisson ⚠️' %>
+
+<% if (managerChangepoints.length > 0) { -%>
+### Detected changepoints (CUSUM)
+
+<% for (const cp of managerChangepoints) { -%>
+* **<%= formatDate(cp.date) %>**: Duration <%= cp.direction %>d by <%= Math.abs(cp.magnitude) %>σ
+<% } -%>
+<% } -%>
+
+---
+
+## About
+
+Everything above is generated from [`managers.csv`](managers.csv), a tiny CSV where
+each row is a reorg (a change to your reporting line or org structure). The bundled
+data is **synthetic sample data** — invented names, dates, and events — so the whole
+thing runs and renders out of the box.
+
+### Run it on your own data
+
+```bash
+npm install
+# edit managers.csv with your own reorg history
+npm start        # regenerates this README.md
+```
+
+Each row of `managers.csv` has: `date` (YYYY-MM-DD of the reorg), `manager`
+(your manager's handle), `stepmanager` (their manager), `duration` (a human-readable
+label — cosmetic), `rung` (how many levels to the top), and `notes` (freeform).
+Consecutive rows with the same `manager` are collapsed into a single stint. By
+default the analysis is frozen to a fixed end date (`END_DATE` in
+[`src/context.ts`](src/context.ts)); set it to `null` to compute against today.
+
+### Development
+
+```bash
+npm test              # run the test suite
+npm run lint          # eslint
+npm run format:check  # prettier
+```
+
+---
+
+*Generated with 10,000 Monte Carlo simulations, bootstrap resampling, Weibull MLE, Kaplan-Meier survival analysis, CUSUM changepoint detection, Shannon entropy, Ljung-Box serial correlation testing, Poisson process goodness-of-fit, and a 6-model forecast ensemble. Because why not.*

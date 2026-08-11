@@ -1,0 +1,49 @@
+{
+  "name": "reorg-tuesday",
+  "version": "1.0.0",
+  "description": "Analyzes organizational restructuring patterns and predicts the next reorg",
+  "type": "module",
+  "main": "dist/index.js",
+  "author": "Ben Balter",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/benbalter/reorg-tuesdays.git"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src/ test/",
+    "lint:fix": "eslint src/ test/ --fix",
+    "format": "prettier --write 'src/**/*.ts' 'test/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts' 'test/**/*.ts'"
+  },
+  "keywords": [
+    "survival-analysis",
+    "statistics",
+    "monte-carlo",
+    "reorg",
+    "for-fun"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "csv-parse": "^6.2.1",
+    "csv-stringify": "^6.7.0",
+    "date-fns": "^4.1.0",
+    "ejs": "^5.0.1",
+    "simple-statistics": "^7.8.9",
+    "typescript": "^6.0.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/ejs": "^3.1.5",
+    "@types/node": "^25.5.0",
+    "eslint": "^10.1.0",
+    "prettier": "^3.8.1",
+    "tsx": "^4.21.0",
+    "typescript-eslint": "^8.58.0",
+    "vitest": "^4.1.2"
+  }
+}

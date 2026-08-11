@@ -1,0 +1,28 @@
+date,manager,stepmanager,duration,rung,notes
+2015-01-05,@ada,N/A,5 months,2,Joined Acme with a flat org structure
+2015-06-01,@grace,@ada,5 months,3,Introduction of managers
+2015-11-02,@linus,@radia,4 months,4,Introduction of Platform managers
+2016-03-01,@linus,@dennis,4 months,5,@dennis hired as VP of Platform
+2016-07-01,@linus,@ken,5 months,5,@ken takes over Platform as @dennis leaves
+2016-12-01,@margaret,@ken,4 months,4,Move to Product
+2017-04-03,@ken,@vint,4 months,3,@margaret moves to Design
+2017-08-01,@katherine,Unclear,6 months,4,@katherine takes over Product
+2018-02-01,@katherine,@edsger,3 months,4,Product moves to Engineering
+2018-05-01,@katherine,Unclear,2 months,4,@edsger leaves
+2018-07-02,@katherine,@barbara,6 months,4,Squads reorg
+2019-01-07,@donald,@barbara,5 months,3,@donald joins to lead EPD
+2019-06-03,@tim,@donald,5 months,4,Product/Eng reorg
+2019-11-01,@guido,@leslie,5 months,4,Move to Infrastructure
+2020-04-01,@guido,@leslie,5 months,4,World-class platform team
+2020-09-01,@guido,@leslie,5 months,4,Post-merger integration
+2021-02-01,@dennis,@vint,3 months,5,@dennis returns to lead a new division
+2021-05-03,@dennis,@vint,5 months,5,Reverse integration
+2021-10-01,@barbara,@guido,5 months,4,Move to Developer Experience
+2022-03-01,@edsger,@bjarne,5 months,3,New Security org formed
+2022-08-01,@edsger,@bjarne,5 months,3,Security merges with Engineering
+2023-01-02,@hedy,@edsger,5 months,4,Eng Ops and Culture
+2023-06-01,@hedy,@edsger,4 months,4,Technical Business Operations
+2023-10-02,@ada,@radia,4 months,4,Enablement reorg
+2024-02-01,@ada,@radia,4 months,4,Internal Comms consolidated
+2024-06-03,@grace,@leslie,3 months,4,Move to Individual Contributor track
+2024-09-02,@grace,@leslie,3 months,4,Platform re-alignment
