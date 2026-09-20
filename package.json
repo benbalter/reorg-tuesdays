@@ -29,7 +29,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "csv-parse": "^6.2.1",
+    "csv-parse": "^7.0.2",
     "csv-stringify": "^6.7.0",
     "date-fns": "^4.1.0",
     "ejs": "^5.0.1",
