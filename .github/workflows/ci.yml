@@ -29,3 +29,20 @@ jobs:
 
       - name: Test
         run: npm test
+
+      # vitest strips types without checking them, so a type error only
+      # shows up here.
+      - name: Typecheck
+        run: npm run build
+
+      # README.md is rendered from src/README.md.ejs and managers.csv by
+      # `npm start`. The output is deterministic (END_DATE freezes "today"
+      # and the Monte Carlo RNG is seeded), so any diff means a source
+      # changed without regenerating the README.
+      - name: README is up to date
+        run: |
+          npm start > /dev/null
+          if ! git diff --exit-code README.md; then
+            echo "::error file=README.md::README.md is out of date. Run npm start and commit the result."
+            exit 1
+          fi
