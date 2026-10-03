@@ -1,14 +1,8 @@
 # Reorg Tuesday
 
-*Ever feel like your org gets restructured every other Tuesday? This treats your
-history of reorgs and manager changes as a [survival-analysis](https://en.wikipedia.org/wiki/Survival_analysis)
-problem — Kaplan-Meier curves, Weibull MLE, Monte Carlo forecasts, a composite
-risk score, and more — then renders it all as the charts below. Mostly for fun.
-See [Reorgs happen](https://ben.balter.com/2026/06/07/reorgs-happen/) for the story
-behind it.*
+*Ever feel like your org gets restructured every other Tuesday? This treats your history of reorgs and manager changes as a [survival-analysis](https://en.wikipedia.org/wiki/Survival_analysis) problem — Kaplan-Meier curves, Weibull MLE, Monte Carlo forecasts, a composite risk score, and more — then renders it all as the charts below. Mostly for fun. See [Reorgs happen](https://ben.balter.com/2026/06/07/reorgs-happen/) for the story behind it.*
 
-> **The data in [`managers.csv`](managers.csv) is synthetic sample data.** Swap in
-> your own and regenerate: `npm install && npm start`. See [below](#about) for details.
+> **The data in [`managers.csv`](managers.csv) is synthetic sample data.** Swap in your own and regenerate: `npm install && npm start`. See [below](#about) for details.
 
 Time at Acme: 9 years, 10 months, 3 weeks, and 6 days (2015-01-05 – 2024-12-02)
 
@@ -416,10 +410,7 @@ xychart-beta
 
 ## About
 
-Everything above is generated from [`managers.csv`](managers.csv), a tiny CSV where
-each row is a reorg (a change to your reporting line or org structure). The bundled
-data is **synthetic sample data** — invented names, dates, and events — so the whole
-thing runs and renders out of the box.
+Everything above is generated from [`managers.csv`](managers.csv), a tiny CSV where each row is a reorg (a change to your reporting line or org structure). The bundled data is **synthetic sample data** — invented names, dates, and events — so the whole thing runs and renders out of the box.
 
 ### Run it on your own data
 
@@ -429,12 +420,7 @@ npm install
 npm start        # regenerates this README.md
 ```
 
-Each row of `managers.csv` has: `date` (YYYY-MM-DD of the reorg), `manager`
-(your manager's handle), `stepmanager` (their manager), `duration` (a human-readable
-label — cosmetic), `rung` (how many levels to the top), and `notes` (freeform).
-Consecutive rows with the same `manager` are collapsed into a single stint. By
-default the analysis is frozen to a fixed end date (`END_DATE` in
-[`src/context.ts`](src/context.ts)); set it to `null` to compute against today.
+Each row of `managers.csv` has: `date` (YYYY-MM-DD of the reorg), `manager` (your manager's handle), `stepmanager` (their manager), `duration` (a human-readable label — cosmetic), `rung` (how many levels to the top), and `notes` (freeform). Consecutive rows with the same `manager` are collapsed into a single stint. By default the analysis is frozen to a fixed end date (`END_DATE` in [`src/context.ts`](src/context.ts)); set it to `null` to compute against today.
 
 ### Development
 
