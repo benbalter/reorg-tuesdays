@@ -321,7 +321,7 @@ export class Cruncher {
     const data: [number, number][] = x.map((xi, i) => [xi, y[i]]);
     const result = ssLinearRegression(data);
     if (!isFinite(result.m) || !isFinite(result.b)) return null;
-    const rSq = ssRSquared(data, (xi) => result.m * xi + result.b);
+    const rSq = ssRSquared(data, (xi: number) => result.m * xi + result.b);
     return {
       slope: Math.round(result.m * 10) / 10,
       intercept: result.b,
