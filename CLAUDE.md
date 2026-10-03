@@ -4,11 +4,11 @@ A novelty survival analysis of reorgs and manager changes (Kaplan-Meier, Weibull
 
 ## Commands
 
-- CI runs `npm run lint`, `npm run format:check`, and `npm test` (vitest). Run all three before committing; `npm run format` fixes formatting.
+- CI runs `npm run lint`, `npm run format:check`, `npm test` (vitest), and `npm run build` (`tsc`, the only typecheck, since vitest and tsx strip types without checking them). Run all four before committing; `npm run format` fixes formatting.
 
 ## Generated files
 
-- `README.md` is rendered from [`src/README.md.ejs`](src/README.md.ejs) and `managers.csv` by `npm start`. Edit the template or the code, then run `npm start` and commit the regenerated README. Don't hand-edit it.
+- `README.md` is rendered from [`src/README.md.ejs`](src/README.md.ejs) and `managers.csv` by `npm start`. Edit the template or the code, then run `npm start` and commit the regenerated README. Don't hand-edit it; CI reruns `npm start` and fails if `README.md` changes.
 - The output is deterministic: `END_DATE` in [`src/context.ts`](src/context.ts) freezes "today" and the Monte Carlo RNG is seeded, so an unrelated diff in the README means something changed in the code.
 
 ## Gotchas
