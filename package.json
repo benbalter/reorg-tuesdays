@@ -33,7 +33,7 @@
     "csv-stringify": "^6.7.0",
     "date-fns": "^4.1.0",
     "ejs": "^7.0.0",
-    "simple-statistics": "^7.8.9",
+    "simple-statistics": "^8.0.0",
     "typescript": "^6.0.2"
   },
   "devDependencies": {
